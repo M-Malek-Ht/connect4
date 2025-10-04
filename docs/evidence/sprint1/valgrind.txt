@@ -1,0 +1,55 @@
+==9609== Memcheck, a memory error detector
+==9609== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==9609== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==9609== Command: ./bin/connect4
+==9609== 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+1 2 3 4 5 6 7 
+Player A, choose a column (1-7): . . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+A . . . . . . 
+1 2 3 4 5 6 7 
+Player B, choose a column (1-7): . . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+A B . . . . . 
+1 2 3 4 5 6 7 
+Player A, choose a column (1-7): . . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+A B A . . . . 
+1 2 3 4 5 6 7 
+Player B, choose a column (1-7): . . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+A B A B . . . 
+1 2 3 4 5 6 7 
+Player A, choose a column (1-7): . . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+A B A B A . . 
+1 2 3 4 5 6 7 
+Player B, choose a column (1-7): . . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+B . . . . . . 
+A B A B A . . 
+1 2 3 4 5 6 7 
+Player A, choose a column (1-7): 

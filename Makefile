@@ -1,6 +1,6 @@
 # Makefile
 CC=gcc
-CFLAGS=-std=c11 -Wall -Wextra -Wpedantic -O2
+CFLAGS=-std=c11 -Wall -Wextra -Wpedantic -O2 -pthread
 INCS=-Iinclude
 SRC=$(wildcard src/*.c)
 OBJ=$(SRC:.c=.o)

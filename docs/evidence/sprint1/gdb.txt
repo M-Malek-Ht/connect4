@@ -1,0 +1,120 @@
+Script started on 2025-10-04 19:30:49+03:00 [COMMAND="gdb -q --args bin/connect4" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="80" LINES="24"]
+Reading symbols from [32mbin/connect4[m...
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <[32mhttps://debuginfod.ubuntu.com[m>
+[?2004hEnable debuginfod for this session? (y or [n]) y
+[?2004lDebuginfod has been enabled.
+To make this setting permanent, add 'set debuginfod enabled on' to .gdbinit.
+Downloading separate debug info for [32m/home/malek/connect4/bin/connect4[m
+[###                                                                         ]                                                                                (No debugging symbols found in [32mbin/connect4[m)
+[?2004h(gdb) break drop[K[K[K[Kboard_drop
+[?2004lBreakpoint 1 at [34m0x1230[m
+[?2004h(gdb) run
+[?2004lStarting program: [32m/home/malek/connect4/bin/connect4[m 
+Downloading separate debug info for [32msystem-supplied DSO at 0x7ffff7fc3000[m
+[###                                                                         ]                                                                                [Thread debugging using libthread_db enabled]
+Using host libthread_db library "[32m/lib/x86_64-linux-gnu/libthread_db.so.1[m".
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+1 2 3 4 5 6 7 
+Player A, choose a column (1-7): nes xt
+[Inferior 1 (process 9454) exited normally]
+[?2004h[?2004l[?2004h(gdb) next
+[?2004lThe program is not being run.
+[?2004h(gdb) bt
+[?2004lNo stack.
+[?2004h(gdb) info locals
+[?2004lNo frame selected.
+[?2004h(gdb) list
+[?2004lDownload failed: Invalid argument.  Continuing without source file [32m./elf/./elf/<built-in>[m.
+warning: 1	[32m./elf/<built-in>[m: No such file or directory
+[?2004h(gdb) break board_drop
+[?2004lNote: breakpoint 1 also set at pc [34m0x555555555230[m.
+Breakpoint 2 at [34m0x555555555230[m
+[?2004h(gdb) run
+[?2004lStarting program: [32m/home/malek/connect4/bin/connect4[m 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "[32m/lib/x86_64-linux-gnu/libthread_db.so.1[m".
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+1 2 3 4 5 6 7 
+Player A, choose a column (1-7): 1
+
+Breakpoint 1, [34m0x0000555555555230[m in [33mboard_drop[m ()
+[?2004h[?2004l[?2004h(gdb) next
+[?2004lSingle stepping until exit from function board_drop,
+which has no line number information.
+[34m0x000055555555563f[m in [33mgame_run[m ()
+[?2004h[?2004l[?2004h(gdb) next
+[?2004lSingle stepping until exit from function game_run,
+which has no line number information.
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+1 2 3 4 5 6 7 
+Player B, choose a column (1-7): bt
+[34m0x00005555555550cd[m in [33mmain[m ()
+[?2004h[?2004l[?2004h(gdb) info locals
+[?2004lNo symbol table info available.
+[?2004h(gdb) list
+[?2004lDownload failed: Invalid argument.  Continuing without source file [32m./csu/../sysdeps/unix/sysv/linux/dl-vdso-setup.c[m.
+Download failed: Invalid argument.  Continuing without source file [32m./csu/../sysdeps/unix/sysv/linux/dl-vdso-setup.c[m.
+End of the file was already reached, use "list ." to list the current location again
+[?2004h(gdb) quit
+[?2004l[?2004hA debugging session is active.
+
+	Inferior 1 [process 9460] will be killed.
+
+Quit anyway? (y or n) y
+[?2004l
+Script done on 2025-10-04 19:32:38+03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2025-10-04 19:33:57+03:00 [COMMAND="gdb -q --args bin/connect4" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="80" LINES="24"]
+Reading symbols from [32mbin/connect4[m...
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <[32mhttps://debuginfod.ubuntu.com[m>
+[?2004hEnable debuginfod for this session? (y or [n]) y
+[?2004lDebuginfod has been enabled.
+To make this setting permanent, add 'set debuginfod enabled on' to .gdbinit.
+Downloading separate debug info for [32m/home/malek/connect4/bin/connect4[m
+[###                                                                         ]                                                                                (No debugging symbols found in [32mbin/connect4[m)
+[?2004h(gdb) rub[Kn
+[?2004lStarting program: [32m/home/malek/connect4/bin/connect4[m 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "[32m/lib/x86_64-linux-gnu/libthread_db.so.1[m".
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+1 2 3 4 5 6 7 
+Player A, choose a column (1-7): 1
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+A . . . . . . 
+1 2 3 4 5 6 7 
+Player B, choose a column (1-7): next
+[Inferior 1 (process 9561) exited normally]
+[?2004h[?2004l[?2004h(gdb) info locals
+[?2004lNo frame selected.
+[?2004h(gdb) continue
+[?2004lThe program is not being run.
+[?2004h(gdb) quit
+[?2004l
+Script done on 2025-10-04 19:34:26+03:00 [COMMAND_EXIT_CODE="0"]

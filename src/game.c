@@ -11,12 +11,12 @@ Cell game_run(void) {
         fflush(stdout);
 
         int col;
-        if (scanf("%d", &col)!=1) return CELL_EMPTY; // EOF or invalid stream
+        if (scanf("%d", &col)!=1) return CELL_EMPTY; 
 
         int placed_row=-1;
         if (!board_drop(&b, col, turn, &placed_row)) {
             printf("Invalid move.\n");
-            continue; // ask same player again
+            continue; 
         }
 
         if (board_is_winning(&b, placed_row, col-1, turn)) {
@@ -32,3 +32,4 @@ Cell game_run(void) {
         turn = (turn==CELL_A) ? CELL_B : CELL_A;
     }
 }
+
