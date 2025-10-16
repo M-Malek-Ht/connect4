@@ -7,8 +7,8 @@
 # Tests (optional): tests/test_main.c or test_main.c
 
 CC      := gcc
-CFLAGS  := -std=c11 -Wall -Wextra -Wpedantic -O2 -I. -Iinclude
-LDFLAGS :=
+CFLAGS  := -std=c11 -Wall -Wextra -Wpedantic -O2 -I. -Iinclude -pthread
+LDFLAGS := -pthread
 
 BIN_DIR := bin
 BIN     := $(BIN_DIR)/connect4
