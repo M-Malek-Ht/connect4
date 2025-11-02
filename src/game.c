@@ -3,6 +3,7 @@
 
 #include <stdlib.h>   // rand, srand
 #include <time.h>     // time
+#include <limits.h>   // INT_MIN
 
 #include <pthread.h>
 #include <string.h>   // memcpy
@@ -135,9 +136,179 @@ typedef struct {
     int result_col;  // 1..7, or -1 if no move
 } BotTask;
 
+/* ===================== Medium bot helpers (pattern-based) ===================== */
+
+// Is there any immediate winning move for player 'p'? Return that column (1..7) or -1.
+static int find_self_win_in_1(const Board *b, Cell p) {
+    for (int col = 1; col <= COLS; ++col) {
+        if (b->heights[col - 1] >= ROWS) continue;
+        if (would_win_if_drop(b, col, p)) return col;
+    }
+    return -1;
+}
+
+// After bot plays 'col', does the opponent have any win-in-1 reply?
+static int move_is_safe_for(const Board *b, int col, Cell bot_player) {
+    Board tmp; memcpy(&tmp, b, sizeof(tmp));
+    int placed_row;
+    if (!board_drop(&tmp, col, bot_player, &placed_row)) return 0; // not playable => not safe
+    Cell opp = (bot_player == CELL_A) ? CELL_B : CELL_A;
+    int threats[COLS];
+    return opponent_winning_cols(&tmp, opp, threats) == 0;
+}
+
+// counts contiguous p including (r,c) in both directions along (dr,dc)
+static int line_len_from(const Board *b, int r, int c, Cell p, int dr, int dc) {
+    int cnt = 1;
+    for (int i=1;i<4;i++){ int rr=r+dr*i, cc=c+dc*i; if(rr<0||rr>=ROWS||cc<0||cc>=COLS) break; if(b->grid[rr][cc]!=p) break; cnt++; }
+    for (int i=1;i<4;i++){ int rr=r-dr*i, cc=c-dc*i; if(rr<0||rr>=ROWS||cc<0||cc>=COLS) break; if(b->grid[rr][cc]!=p) break; cnt++; }
+    return cnt;
+}
+
+// whether there exists a length-3 through (r,c) with at least one open end
+static int open_three_through(const Board *b, int r, int c, Cell p) {
+    static const int D[4][2]={{0,1},{1,0},{1,1},{1,-1}};
+    int total = 0;
+    for (int k=0;k<4;k++){
+        int dr=D[k][0], dc=D[k][1];
+        for (int s=-3;s<=0;s++){
+            int cnt=0, has_me=0, openL=0, openR=0;
+            for (int i=0;i<4;i++){
+                int rr=r+(s+i)*dr, cc=c+(s+i)*dc;
+                if(rr<0||rr>=ROWS||cc<0||cc>=COLS){ cnt=-99; break; }
+                Cell q=b->grid[rr][cc];
+                if (rr==r && cc==c) has_me=1;
+                if (q==p) cnt++;
+                else if (q!=CELL_EMPTY){ cnt=-99; break; }
+            }
+            if (cnt==3 && has_me){
+                int Lr=r+(s-1)*dr, Lc=c+(s-1)*dc;
+                int Rr=r+(s+4)*dr, Rc=c+(s+4)*dc;
+                if (Lr>=0&&Lr<ROWS&&Lc>=0&&Lc<COLS && b->grid[Lr][Lc]==CELL_EMPTY) openL=1;
+                if (Rr>=0&&Rr<ROWS&&Rc>=0&&Rc<COLS && b->grid[Rr][Rc]==CELL_EMPTY) openR=1;
+                if (openL||openR) total++;
+            }
+        }
+    }
+    return total;
+}
+
+// how many win-in-1 moves do WE have after this position?
+static int count_our_immediate_wins(const Board *b, Cell me){
+    int wins=0;
+    for(int col=1; col<=COLS; ++col){
+        if (b->heights[col-1] >= ROWS) continue;
+        if (would_win_if_drop(b, col, me)) wins++;
+    }
+    return wins;
+}
+
+static int score_move(const Board *after, int placed_row, int placed_col0, Cell me, Cell opp,
+                      int opp_threats_before) {
+    static const int D[4][2]={{0,1},{1,0},{1,1},{1,-1}};
+    int best_line=0;
+    for(int k=0;k<4;k++){
+        int len=line_len_from(after, placed_row, placed_col0, me, D[k][0], D[k][1]);
+        if(len>best_line) best_line=len;
+    }
+    int s = 0;
+    s += 100 * best_line;
+    s +=  60 * open_three_through(after, placed_row, placed_col0, me);
+    s +=  40 * count_our_immediate_wins(after, me);
+
+    // threats removed = opp immediate wins before - after
+    int opp_threats_after=0;
+    for(int col=1; col<=COLS; ++col){
+        if (after->heights[col-1] >= ROWS) continue;
+        if (would_win_if_drop(after, col, opp)) opp_threats_after++;
+    }
+    int removed = (opp_threats_before > opp_threats_after) ? (opp_threats_before - opp_threats_after) : 0;
+    s += 25 * removed;
+
+    // small “depth” bonus (gravity/stability)
+    s += 5 * (ROWS - placed_row);
+
+    // tiny jitter to avoid determinism (±3)
+    rng_init_once();
+    s += (rand()%7) - 3;
+    return s;
+}
+
+// Medium: threat-scoring, no center bias.
+// Steps: (1) win now; (2) block now (choose best blocking move by score);
+// (3) among SAFE moves (do not give opponent win-next), pick highest score;
+// (4) if none safe, pick highest scoring move anyway.
+static int bot_pick_medium(const Board *b, Cell bot_player) {
+    Cell opp = (bot_player == CELL_A) ? CELL_B : CELL_A;
+
+    // Number of opponent immediate wins in current position
+    int opp_threats_before = 0;
+    for(int col=1; col<=COLS; ++col){
+        if (b->heights[col-1] >= ROWS) continue;
+        if (would_win_if_drop(b, col, opp)) opp_threats_before++;
+    }
+
+    // 1) Win now
+    for (int col=1; col<=COLS; ++col){
+        if (b->heights[col-1] >= ROWS) continue;
+        if (would_win_if_drop(b, col, bot_player)) return col;
+    }
+
+    // 2) Block now — pick the block with best heuristic score
+    int best_block_col = -1, best_block_score = INT_MIN;
+    for (int col=1; col<=COLS; ++col){
+        if (b->heights[col-1] >= ROWS) continue;
+        if (!would_win_if_drop(b, col, opp)) continue; // not a block
+        Board tmp = *b;
+        int r;
+        board_drop(&tmp, col, bot_player, &r);
+        int sc = score_move(&tmp, r, col-1, bot_player, opp, opp_threats_before);
+        if (sc > best_block_score){ best_block_score=sc; best_block_col=col; }
+    }
+    if (best_block_col != -1) return best_block_col;
+
+    // 3) Score all SAFE moves (don’t hand opponent win-next)
+    int best_col = -1, best_score = INT_MIN;
+    for (int col=1; col<=COLS; ++col){
+        if (b->heights[col-1] >= ROWS) continue;
+        Board tmp = *b;
+        int r;
+        if (!board_drop(&tmp, col, bot_player, &r)) continue;
+
+        // safety: ensure opponent has no win-in-1 reply
+        int unsafe = 0;
+        for(int oc=1; oc<=COLS; ++oc){
+            if (tmp.heights[oc-1] >= ROWS) continue;
+            if (would_win_if_drop(&tmp, oc, opp)) { unsafe = 1; break; }
+        }
+        if (unsafe) continue;
+
+        int sc = score_move(&tmp, r, col-1, bot_player, opp, opp_threats_before);
+        if (sc > best_score){ best_score=sc; best_col=col; }
+    }
+    if (best_col != -1) return best_col;
+
+    // 4) Nothing safe? take the best overall (damage control)
+    best_col = -1; best_score = INT_MIN;
+    for (int col=1; col<=COLS; ++col){
+        if (b->heights[col-1] >= ROWS) continue;
+        Board tmp = *b;
+        int r; board_drop(&tmp, col, bot_player, &r);
+        int sc = score_move(&tmp, r, col-1, bot_player, opp, opp_threats_before);
+        if (sc > best_score){ best_score=sc; best_col=col; }
+    }
+    return best_col;
+}
+/* ===================================================================== */
+
 static int bot_pick_dispatch(const Board *b, BotDifficulty d, Cell bot_player) {
     switch (d) {
         case BOT_EASY:
+            // Easy+ as requested (center bias + immediate block).
+            return bot_pick_easy_plus(b, bot_player);
+        case BOT_MEDIUM:
+            // Medium: threat-scoring (win/block/safe-score), no center bias.
+            return bot_pick_medium(b, bot_player);
         default:
             return bot_pick_easy_plus(b, bot_player);
     }
@@ -185,8 +356,8 @@ Cell game_run(void) {
         if (mode == MODE_PVB) {
             while (1) {
                 printf("Select difficulty:\n");
-                printf("  1) Easy (random valid)\n");
-                printf("  2) Medium (not available yet)\n");
+                printf("  1) Easy\n");
+                printf("  2) Medium\n");
                 printf("  3) Hard (not available yet)\n");
                 printf("Choice: ");
                 fflush(stdout);
@@ -199,17 +370,14 @@ Cell game_run(void) {
                 }
                 int ch; while ((ch = getchar()) != '\n' && ch != EOF) {}
 
-                if (choice == 1) { diff = BOT_EASY; break; }
-                if (choice == 2 || choice == 3) {
-                    puts("Bot difficulty not available yet. Returning to mode selection...");
-                    // go back to outer loop to re-choose PvP or PvB
-                    goto RESELECT_MODE;
-                }
+                if (choice == 1) { diff = BOT_EASY;   break; }
+                if (choice == 2) { diff = BOT_MEDIUM; break; }
+                if (choice == 3) { puts("Hard not available yet."); continue; }
                 puts("Please choose 1, 2, or 3.");
             }
         }
 
-        // If we got here, we have a playable setup (PvP or PvB Easy)
+        // If we got here, we have a playable setup (PvP or PvB Easy/Medium)
         break;
 
 RESELECT_MODE:
@@ -235,34 +403,34 @@ RESELECT_MODE:
             }
         } else {
             // BOT turn (B when PvB) — compute in a separate thread
-BotTask task;
-board_clone(&task.snapshot, &b);   // read-only snapshot to avoid races
-task.diff = diff;
-task.bot_player = turn; 
-task.result_col = -1;
+            BotTask task;
+            board_clone(&task.snapshot, &b);   // read-only snapshot to avoid races
+            task.diff = diff;
+            task.bot_player = turn; 
+            task.result_col = -1;
 
-pthread_t th;
-if (pthread_create(&th, NULL, bot_thread_main, &task) != 0) {
-    // Fallback: single-threaded if thread creation fails
-    col = bot_pick_dispatch(&b, diff, turn);
-} else {
-    // (Optional) tiny wait UX could be added later; for now, just join.
-    pthread_join(th, NULL);
-    col = task.result_col;
-}
+            pthread_t th;
+            if (pthread_create(&th, NULL, bot_thread_main, &task) != 0) {
+                // Fallback: single-threaded if thread creation fails
+                col = bot_pick_dispatch(&b, diff, turn);
+            } else {
+                // (Optional) tiny wait UX could be added later; for now, just join.
+                pthread_join(th, NULL);
+                col = task.result_col;
+            }
 
-if (col < 1) {
-    // No valid moves (should imply draw)
-    if (board_is_full(&b)) {
-        printf("\nFinal board:\n");
-        board_print(&b);
-        puts("It's a draw.");
-        return CELL_EMPTY;
-    }
-    // Fallback: reprompt (shouldn't happen)
-    continue;
-}
-printf("Bot (%c) chooses column %d\n", (char)turn, col);
+            if (col < 1) {
+                // No valid moves (should imply draw)
+                if (board_is_full(&b)) {
+                    printf("\nFinal board:\n");
+                    board_print(&b);
+                    puts("It's a draw.");
+                    return CELL_EMPTY;
+                }
+                // Fallback: reprompt (shouldn't happen)
+                continue;
+            }
+            printf("Bot (%c) chooses column %d\n", (char)turn, col);
 
         }
 
