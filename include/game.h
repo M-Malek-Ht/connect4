@@ -10,7 +10,7 @@ typedef enum {
 
 typedef enum {
     BOT_EASY = 1,
-    BOT_MEDIUM = 2,   // reserved for later
+    BOT_MEDIUM = 2,   // implemented ;)
     BOT_HARD = 3      // reserved for later
 } BotDifficulty;
 
