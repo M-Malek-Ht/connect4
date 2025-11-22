@@ -5,7 +5,8 @@
 
 typedef enum {
     MODE_PVP = 1,
-    MODE_PVB = 2
+    MODE_PVB = 2,
+  MODE_ONLINE = 3 
 } GameMode;
 
 typedef enum {
