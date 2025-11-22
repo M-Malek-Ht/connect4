@@ -1,6 +1,14 @@
 #include "board.h"
 #include <stdio.h>
 
+// board.c
+#define ANSI_RESET  "\x1b[0m"
+#define ANSI_A      "\x1b[36m" // cyan for A
+#define ANSI_B      "\x1b[35m" // magenta for B
+
+
+
+
 void board_init(Board *b) {
     for (int r=0; r<ROWS; ++r)
         for (int c=0; c<COLS; ++c)
@@ -59,13 +67,32 @@ void board_print(const Board *b) {
     printf("\n");
 
     // Rows (top -> bottom)
-    for (int r = 0; r < ROWS; r++) {
+       for (int r = 0; r < ROWS; r++) {
         printf("   |");
         for (int c = 0; c < COLS; c++) {
-            char ch = b->grid[r][c];
-            printf(" %c |", ch);
+            Cell cell = b->grid[r][c];
+            char ch = (char)cell;
+
+            const char *start = "";
+            const char *end   = "";
+
+            if (cell == CELL_A) {
+    start = ANSI_A;
+    end   = ANSI_RESET;
+} else if (cell == CELL_B) {
+    start = ANSI_B;
+    end   = ANSI_RESET;
+}
+
+
+            if (*start) {
+                printf(" %s%c%s |", start, ch, end);
+            } else {
+                printf(" %c |", ch);
+            }
         }
         printf("\n");
+
 
         // Row separator
         printf("   +");
